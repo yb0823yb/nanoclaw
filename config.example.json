@@ -1,0 +1,31 @@
+{
+    "api_key": "硅基流动密钥",
+    "base_url": "https://api.siliconflow.cn/v1",
+    "models": {
+        "main": "deepseek-ai/DeepSeek-V4-Pro",
+        "subagent": "Qwen/Qwen3.5-35B-A3B",
+        "cheap": "Qwen/Qwen3.5-4B"
+    },
+    "workspace": ".",
+    "max_iterations": 32,
+    "identity_file": "identity.md",
+    "feishu": {
+        "app_id": "cli_aa31c3bbddb8dd18",
+        "app_secret": "飞书密钥"
+    },
+    "qq": {
+        "app_id": "1905696037",
+        "app_secret": "QQ密钥"
+    },
+    "web": {
+        "enabled": true,
+        "host": "0.0.0.0",
+        "port": 8080
+    },
+    "mcp_servers": {
+        "poetry": {
+            "command": "/home/yb_ai/workdir/myenv/bin/python",
+            "args": ["mcp_servers/poetry_server.py"]
+        }
+    }
+}

@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NanoClaw</title>
+    <!-- Markdown 渲染 -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- 代码高亮 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11/styles/github-dark-dimmed.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11/highlight.min.js"></script>
+    <!-- 字体 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-tertiary: #1a1a28;
+            --bg-user: #2a2a3e;
+            --bg-bot: transparent;
+            --bg-input: #16161f;
+            --border-subtle: rgba(255, 255, 255, 0.06);
+            --border-input: rgba(255, 255, 255, 0.1);
+            --text-primary: #e8e8ed;
+            --text-secondary: #9494a8;
+            --text-muted: #5a5a6e;
+            --accent: #d4a853;
+            --accent-hover: #e0b964;
+            --accent-glow: rgba(212, 168, 83, 0.15);
+            --code-bg: #0d1117;
+            --scrollbar: rgba(255, 255, 255, 0.08);
+            --scrollbar-hover: rgba(255, 255, 255, 0.15);
+            --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.4);
+            --radius: 12px;
+            --radius-sm: 8px;
+            --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ═══════════ 顶栏 ═══════════ */
+        .topbar {
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            border-bottom: 1px solid var(--border-subtle);
+            background: var(--bg-secondary);
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .topbar-logo {
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, var(--accent), #b8863a);
+            border-radius: 7px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .topbar-title {
+            font-size: 15px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            color: var(--text-primary);
+        }
+
+        .topbar-status {
+            position: absolute;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .topbar-status .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #4ade80;
+            transition: background var(--transition);
+        }
+
+        .topbar-status .dot.offline {
+            background: #ef4444;
+        }
+
+        /* ═══════════ 消息区域 ═══════════ */
+        .messages-wrapper {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
+
+        .messages-wrapper::-webkit-scrollbar {
+            width: 6px;
+        }
+        .messages-wrapper::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .messages-wrapper::-webkit-scrollbar-thumb {
+            background: var(--scrollbar);
+            border-radius: 3px;
+        }
+        .messages-wrapper::-webkit-scrollbar-thumb:hover {
+            background: var(--scrollbar-hover);
+        }
+
+        .messages-inner {
+            max-width: 780px;
+            margin: 0 auto;
+            padding: 24px 20px 16px;
+        }
+
+        /* ─── 单条消息 ─── */
+        .msg-row {
+            display: flex;
+            gap: 14px;
+            margin-bottom: 28px;
+            animation: msg-in 0.35s ease-out;
+        }
+
+        @keyframes msg-in {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .msg-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            margin-top: 2px;
+        }
+
+        .msg-avatar.user {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: #fff;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .msg-avatar.bot {
+            background: linear-gradient(135deg, var(--accent), #b8863a);
+        }
+
+        .msg-body {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .msg-name {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+
+        .msg-content {
+            font-size: 15px;
+            line-height: 1.7;
+            color: var(--text-primary);
+            word-break: break-word;
+        }
+
+        .msg-content.user-text {
+            background: var(--bg-user);
+            padding: 12px 16px;
+            border-radius: var(--radius);
+            display: inline-block;
+            max-width: 100%;
+        }
+
+        /* ─── Markdown 样式 ─── */
+        .msg-content p { margin-bottom: 10px; }
+        .msg-content p:last-child { margin-bottom: 0; }
+
+        .msg-content strong { color: #fff; font-weight: 600; }
+        .msg-content em { color: var(--text-secondary); font-style: italic; }
+
+        .msg-content code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            background: var(--code-bg);
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: var(--accent);
+        }
+
+        .msg-content pre {
+            background: var(--code-bg);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            padding: 16px;
+            margin: 12px 0;
+            overflow-x: auto;
+            position: relative;
+        }
+
+        .msg-content pre code {
+            background: none;
+            padding: 0;
+            font-size: 13px;
+            line-height: 1.6;
+            color: var(--text-primary);
+        }
+
+        .msg-content pre::-webkit-scrollbar {
+            height: 4px;
+        }
+        .msg-content pre::-webkit-scrollbar-thumb {
+            background: var(--scrollbar);
+            border-radius: 2px;
+        }
+
+        .msg-content blockquote {
+            border-left: 3px solid var(--accent);
+            padding: 8px 16px;
+            margin: 12px 0;
+            color: var(--text-secondary);
+            background: rgba(212, 168, 83, 0.05);
+            border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+        }
+
+        .msg-content ul, .msg-content ol {
+            padding-left: 20px;
+            margin: 8px 0;
+        }
+
+        .msg-content li {
+            margin-bottom: 4px;
+        }
+
+        .msg-content hr {
+            border: none;
+            border-top: 1px solid var(--border-subtle);
+            margin: 16px 0;
+        }
+
+        .msg-content a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+        .msg-content a:hover {
+            text-decoration: underline;
+        }
+
+        .msg-content table {
+            border-collapse: collapse;
+            margin: 12px 0;
+            font-size: 14px;
+            width: 100%;
+        }
+        .msg-content th, .msg-content td {
+            border: 1px solid var(--border-subtle);
+            padding: 8px 12px;
+            text-align: left;
+        }
+        .msg-content th {
+            background: var(--bg-tertiary);
+            font-weight: 500;
+        }
+
+        /* ─── 代码块复制按钮 ─── */
+        .code-block-wrapper {
+            position: relative;
+        }
+        .copy-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-muted);
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all var(--transition);
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .copy-btn:hover {
+            background: rgba(255,255,255,0.14);
+            color: var(--text-primary);
+        }
+
+        /* ─── 打字指示器 ─── */
+        .typing-indicator {
+            display: none;
+            margin-bottom: 28px;
+        }
+        .typing-indicator.active { display: flex; }
+
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+            padding: 10px 16px;
+        }
+        .typing-dots span {
+            width: 7px;
+            height: 7px;
+            background: var(--text-muted);
+            border-radius: 50%;
+            animation: dot-pulse 1.4s ease-in-out infinite;
+        }
+        .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes dot-pulse {
+            0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+
+        /* ═══════════ 输入区域 ═══════════ */
+        .input-area {
+            flex-shrink: 0;
+            border-top: 1px solid var(--border-subtle);
+            background: var(--bg-secondary);
+            padding: 16px 20px 20px;
+        }
+
+        .input-box {
+            max-width: 780px;
+            margin: 0 auto;
+            background: var(--bg-input);
+            border: 1px solid var(--border-input);
+            border-radius: var(--radius);
+            display: flex;
+            align-items: flex-end;
+            padding: 4px;
+            transition: border-color var(--transition), box-shadow var(--transition);
+        }
+
+        .input-box:focus-within {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .input-box textarea {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--text-primary);
+            font-family: 'Noto Sans SC', sans-serif;
+            font-size: 15px;
+            line-height: 1.5;
+            padding: 10px 14px;
+            resize: none;
+            max-height: 160px;
+            min-height: 22px;
+        }
+
+        .input-box textarea::placeholder {
+            color: var(--text-muted);
+        }
+
+        .send-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            border: none;
+            background: var(--accent);
+            color: var(--bg-primary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 2px;
+            flex-shrink: 0;
+            transition: all var(--transition);
+        }
+
+        .send-btn:hover:not(:disabled) {
+            background: var(--accent-hover);
+            transform: scale(1.05);
+        }
+
+        .send-btn:disabled {
+            background: var(--bg-tertiary);
+            color: var(--text-muted);
+            cursor: not-allowed;
+        }
+
+        .send-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .input-hint {
+            max-width: 780px;
+            margin: 8px auto 0;
+            font-size: 11px;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        /* ═══════════ 欢迎画面 ═══════════ */
+        .welcome {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 20px;
+            gap: 16px;
+            animation: fade-in 0.6s ease-out;
+        }
+
+        @keyframes fade-in {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+
+        .welcome-icon {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, var(--accent), #b8863a);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            box-shadow: 0 8px 24px rgba(212, 168, 83, 0.2);
+        }
+
+        .welcome h2 {
+            font-size: 22px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .welcome p {
+            font-size: 14px;
+            color: var(--text-muted);
+            max-width: 360px;
+            text-align: center;
+            line-height: 1.6;
+        }
+
+        /* ═══════════ 响应式 ═══════════ */
+        @media (max-width: 600px) {
+            .messages-inner { padding: 16px 12px; }
+            .input-area { padding: 12px; }
+            .topbar-status { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 顶栏 -->
+    <div class="topbar">
+        <div class="topbar-logo">🦞</div>
+        <span class="topbar-title">NanoClaw</span>
+        <div class="topbar-status" id="statusBar">
+            <span class="dot" id="statusDot"></span>
+            <span id="statusText">连接中</span>
+        </div>
+    </div>
+
+    <!-- 消息区域 -->
+    <div class="messages-wrapper" id="messagesWrapper">
+        <div class="messages-inner" id="messages">
+            <!-- 欢迎画面 -->
+            <div class="welcome" id="welcome">
+                <div class="welcome-icon">🦞</div>
+                <h2>NanoClaw</h2>
+                <p>你的 AI 编程助手，支持读写文件、执行命令、联网搜索。输入消息开始对话。</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 打字指示器 -->
+    <div class="typing-indicator" id="typing">
+        <div class="messages-inner" style="padding: 0 20px;">
+            <div class="msg-row">
+                <div class="msg-avatar bot">🦞</div>
+                <div class="msg-body">
+                    <div class="typing-dots">
+                        <span></span><span></span><span></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 输入区域 -->
+    <div class="input-area">
+        <div class="input-box" id="inputBox">
+            <textarea id="input" placeholder="给 NanoClaw 发送消息..." rows="1" disabled></textarea>
+            <button class="send-btn" id="sendBtn" disabled>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2"/>
+                </svg>
+            </button>
+        </div>
+        <div class="input-hint">Enter 发送 · Shift+Enter 换行</div>
+    </div>
+
+    <script>
+        // ═══════════ Markdown 配置 ═══════════
+        marked.setOptions({
+            highlight: function(code, lang) {
+                if (lang && hljs.getLanguage(lang)) {
+                    return hljs.highlight(code, { language: lang }).value;
+                }
+                return hljs.highlightAuto(code).value;
+            },
+            breaks: true,
+            gfm: true,
+        });
+
+        // ═══════════ DOM 元素 ═══════════
+        const messagesEl = document.getElementById('messages');
+        const wrapperEl = document.getElementById('messagesWrapper');
+        const inputEl = document.getElementById('input');
+        const sendBtn = document.getElementById('sendBtn');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const typingEl = document.getElementById('typing');
+        const welcomeEl = document.getElementById('welcome');
+
+        // ═══════════ WebSocket ═══════════
+        const wsUrl = `ws://${location.host}/ws`;
+        let ws = null;
+        let isWaiting = false;
+
+        function setConnected(connected) {
+            inputEl.disabled = !connected;
+            sendBtn.disabled = !connected || isWaiting;
+            statusText.textContent = connected ? '在线' : '已断开';
+            statusDot.className = `dot ${connected ? '' : 'offline'}`;
+        }
+
+        function connect() {
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = () => {
+                setConnected(true);
+                inputEl.focus();
+            };
+
+            ws.onmessage = (e) => {
+                isWaiting = false;
+                sendBtn.disabled = false;
+                typingEl.classList.remove('active');
+                appendBotMessage(e.data);
+            };
+
+            ws.onclose = () => {
+                setConnected(false);
+                isWaiting = false;
+                typingEl.classList.remove('active');
+                // 3 秒后重连
+                setTimeout(connect, 3000);
+            };
+
+            ws.onerror = () => {
+                setConnected(false);
+            };
+        }
+
+        // ═══════════ 消息渲染 ═══════════
+        function hideWelcome() {
+            if (welcomeEl) {
+                welcomeEl.style.display = 'none';
+            }
+        }
+
+        function scrollToBottom() {
+            requestAnimationFrame(() => {
+                wrapperEl.scrollTop = wrapperEl.scrollHeight;
+            });
+        }
+
+        function appendUserMessage(text) {
+            hideWelcome();
+            const row = document.createElement('div');
+            row.className = 'msg-row';
+            row.innerHTML = `
+                <div class="msg-avatar user">你</div>
+                <div class="msg-body">
+                    <div class="msg-content user-text">${escapeHtml(text)}</div>
+                </div>
+            `;
+            messagesEl.appendChild(row);
+            scrollToBottom();
+        }
+
+        function appendBotMessage(mdText) {
+            hideWelcome();
+            const row = document.createElement('div');
+            row.className = 'msg-row';
+
+            // 渲染 Markdown
+            const rendered = marked.parse(mdText);
+
+            row.innerHTML = `
+                <div class="msg-avatar bot">🦞</div>
+                <div class="msg-body">
+                    <div class="msg-content">${rendered}</div>
+                </div>
+            `;
+
+            messagesEl.appendChild(row);
+
+            // 给代码块加复制按钮
+            row.querySelectorAll('pre').forEach(pre => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'code-block-wrapper';
+                pre.parentNode.insertBefore(wrapper, pre);
+                wrapper.appendChild(pre);
+
+                const btn = document.createElement('button');
+                btn.className = 'copy-btn';
+                btn.textContent = '复制';
+                btn.onclick = () => {
+                    const code = pre.querySelector('code')?.textContent || pre.textContent;
+                    navigator.clipboard.writeText(code).then(() => {
+                        btn.textContent = '已复制 ✓';
+                        setTimeout(() => btn.textContent = '复制', 2000);
+                    });
+                };
+                wrapper.appendChild(btn);
+            });
+
+            scrollToBottom();
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // ═══════════ 发送消息 ═══════════
+        function sendMessage() {
+            const text = inputEl.value.trim();
+            if (!text || isWaiting) return;
+
+            ws.send(text);
+            appendUserMessage(text);
+            inputEl.value = '';
+            autoResize();
+
+            // 显示打字指示
+            isWaiting = true;
+            sendBtn.disabled = true;
+            typingEl.classList.add('active');
+            scrollToBottom();
+        }
+
+        // ═══════════ 自动调整输入框高度 ═══════════
+        function autoResize() {
+            inputEl.style.height = 'auto';
+            inputEl.style.height = Math.min(inputEl.scrollHeight, 160) + 'px';
+        }
+
+        // ═══════════ 事件绑定 ═══════════
+        sendBtn.addEventListener('click', sendMessage);
+
+        inputEl.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        inputEl.addEventListener('input', autoResize);
+
+        // ═══════════ 启动 ═══════════
+        connect();
+    </script>
+</body>
+</html>

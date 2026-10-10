@@ -1,0 +1,23 @@
+# Python 字节缓存
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# 运行日志文件
+*.log
+
+# IDE 相关
+.vscode/
+.idea/
+.python-version
+
+# 运行会话临时目录
+session/
+sessions/
+workspace/
+
+# 虚拟环境、模型缓存
+myenv/
+yb_models/
+config.json
